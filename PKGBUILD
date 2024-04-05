@@ -1,47 +1,39 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.0.33
-#_zigver=0.12.0-dev.1828+225fe6ddb #https://github.com/oven-sh/bun/blob/bun-v1.0.28/build.zig#L9
+pkgver=1.1.1
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
 license=('GPL')
+depends=(zlib libarchive mimalloc libuv sqlite)
 makedepends=(
 	clang16 cmake esbuild git go icu libiconv libtool lld16 llvm16 ninja pkg-config python ruby rust unzip
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('39a384f74e4db78aab795560db81933883c41b6c936d5d8ce6463d8f347f4db1678236fa8574658eaa430693d11cf6e4d28e81a2c54f5ac84ef2abc3a1a0432c'
-        '42fae8e7419fd144988da58d8530d519d74eab7cedcca284dfa6e46b2e4adab368e9c9e4ce9b051422fe066b5a41f3b22087eaf444aecf52d76e944b56289314')
+b2sums=('7421951a3b1cf33ea4874b7513e5361f321b31adcde0b70eef49ce61516bcf65ca02fed40c828d34e3b581defdb43846e5ca7bdb5194df8534f0f5cb440fd563'
+        '4bbcda0229e68dc511c7d8712533abd7376e809ff9f013721ed99b5da8c2228de0ae868a5164c43cfdcdc6efe78a99c7b56ba7effab7444e702b4d2a1fa4fd60')
 
 _j=$(($(nproc)/2)) #change for your system
 
 prepare() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
 
-  cd "$pkgname"
-
-# 
-#   export PATH="$PATH":$srcdir/zig-linux-x86_64-$_zigver
-# 
-#   mkdir -p $srcdir/bun/.cache/
-#   # ln -sf $srcdir/zig-linux-$_zigver $srcdir/bun/.cache/zig
-#   # ln -sf $srcdir/zig-linux-$_zigver.tar.xz $srcdir/bun/.cache/
-  git -c submodule.src/javascript/jsc/WebKit.update=checkout submodule update --init --recursive --depth=1 --progress
+  cd bun
 
   bun i
-  #cd test; bun i; cd ..
-  
-  bash ./scripts/all-dependencies.sh
-  bash ./scripts/download-zig.sh
+  bash ./scripts/update-submodules.sh --webkit
+  bash ./scripts/set-webkit-submodule-to-cmake.sh
 }
 
 build() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
 
-  cd $srcdir/bun/
+  cd bun
+
+  bash ./scripts/all-dependencies.sh
 
   make runtime_js fallback_decoder bun_error node-fallbacks
 
@@ -51,10 +43,10 @@ build() {
   #export CFLAGS="$CFLAGS -ffat-lto-objects"
   #export CXXFLAGS="$CXXFLAGS -ffat-lto-objects"
 
-  CC="clang" CXX="clang++" cmake \
+  CC="/usr/lib/llvm16/bin/clang" CXX="/usr/lib/llvm16/bin/clang++" cmake \
       -S . \
-      -DCMAKE_CXX_FLAGS="-fuse-ld=lld" \
       -B ./build \
+      -Wno-dev \
       -DPORT="JSCOnly" \
       -DENABLE_STATIC_JSC=ON \
       -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON \
@@ -79,19 +71,22 @@ build() {
   cp -r ./build/bmalloc/Headers/bmalloc/ ./output/include
   cp -r ./Source/JavaScriptCore/Scripts ./output/Source/JavaScriptCore
   cp ./Source/JavaScriptCore/create_hash_table ./output/Source/JavaScriptCore
+  rm -rf ./output/include/unicode
+  cp -r /usr/include/unicode ./output/include/unicode
 
   ln -sf /lib/libicudata.so ./output/lib/libicudata.a
   ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
   ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
 
-  # make jsc
-
-  cmake -B $srcdir/$pkgname/build -S $srcdir/$pkgname -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DZIG_OPTIMIZE=ReleaseFast
-  ninja -C $srcdir/$pkgname/build -j$_j
+  cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF \
+        -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DZIG_OPTIMIZE=ReleaseFast \
+        -DLLVM_PREFIX=/usr/lib/llvm16 -DCMAKE_CXX_COMPILER=/usr/lib/llvm16/bin/clang++ -DCMAKE_C_COMPILER=/usr/lib/llvm16/bin/clang \
+        -DUSE_LTO=ON -DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_CUSTOM_LIBUV=OFF -DUSE_STATIC_SQLITE=OFF 
+  ninja -C $srcdir/build -j$_j
 }
 
 package() {
-  install -Dm755 $srcdir/$pkgname/build/bun $pkgdir/usr/bin/bun
+  install -Dm755 $srcdir/build/bun $pkgdir/usr/bin/bun
   ln -s /usr/bin/bun $pkgdir/usr/bin/bunx
 
   SHELL=zsh $pkgdir/usr/bin/bun completions > bun.zsh
