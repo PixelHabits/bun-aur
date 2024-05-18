@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.3
+pkgver=1.1.8
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
@@ -8,22 +8,21 @@ url="https://github.com/oven-sh/bun"
 license=('GPL')
 depends=(zlib libarchive mimalloc libuv sqlite)
 makedepends=(
-	clang16 cmake esbuild git go icu libiconv libtool lld16 llvm16 ninja pkg-config python ruby rust unzip
+	clang16 cmake esbuild git go icu libiconv libtool lld16 llvm16 ninja pkg-config python ruby rust unzip zig
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('cdec288d0171ffa8668e04fe0139b2c5839ccf1896f96197b0415987a98709e1cde0a96d8f61ff8faba87be1df896e8f70b2b06053a6c569ce1749f09d46a067'
-        '11b97cbf916a9087646eb5c1c7c3afbb4294dbcd24a67763b1f6beeadab8ef61fe1a2802cc2bfb4ad21cb29576a6edb4f21c5c7c1bef163798edd86711bf31f1')
+b2sums=('d9f34e29168c098c14c5a5615ced208db1ae8b26ce1922eb05184db0899ccf4cca53848d23d1f1e65237c1a1566ce2ee12fae9694388da48c3bb51213609a011'
+        '6baced56b92e9577859c58f71d4f5ac036c08d972e51a4bf77b5223e385476ef21a689aac76fccd92debb18db55865042838361144d3ab8936dd94564a6329e6')
+
+options=(!lto)
 
 _j=$(($(nproc)/2)) #change for your system
 
 prepare() {
-  export PATH="${srcdir}/bun-linux-x64:$PATH"
-
   cd bun
 
-  bun i
   bash ./scripts/update-submodules.sh --webkit
   bash ./scripts/set-webkit-submodule-to-cmake.sh
 }
@@ -33,17 +32,19 @@ build() {
 
   cd bun
 
+  bun i
+
   bash ./scripts/all-dependencies.sh
 
   make runtime_js fallback_decoder bun_error node-fallbacks
 
   cd src/bun.js/WebKit/
 
-  # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L60
-  #export CFLAGS="$CFLAGS -ffat-lto-objects"
-  #export CXXFLAGS="$CXXFLAGS -ffat-lto-objects"
+  # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L84
 
-  CC="/usr/lib/llvm16/bin/clang" CXX="/usr/lib/llvm16/bin/clang++" cmake \
+  COMMON_FLAGS="-mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections"
+
+  CC="/usr/bin/clang" CXX="/usr/bin/clang++" CFLAGS="${DEFAULT_CFLAGS} $CFLAGS" CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS" cmake \
       -S . \
       -B ./build \
       -Wno-dev \
@@ -57,6 +58,10 @@ build() {
       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
       -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON \
       -DENABLE_SINGLE_THREADED_VM_ENTRY_SCOPE=ON \
+      -DENABLE_REMOTE_INSPECTOR=ON \
+      -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
+      -DCMAKE_AR="/usr/bin/llvm-ar" \
+      -DCMAKE_RANLIB="/usr/bin/llvm-ranlib" \
       -GNinja
 
   ninja -C ./build jsc -j$_j
@@ -78,10 +83,9 @@ build() {
   ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
   ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
 
-  cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF \
-        -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DZIG_OPTIMIZE=ReleaseFast \
-        -DLLVM_PREFIX=/usr/lib/llvm16 -DCMAKE_CXX_COMPILER=/usr/lib/llvm16/bin/clang++ -DCMAKE_C_COMPILER=/usr/lib/llvm16/bin/clang \
-        -DUSE_LTO=ON -DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_CUSTOM_LIBUV=OFF -DUSE_STATIC_SQLITE=OFF 
+  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF \
+        -DLLVM_PREFIX=/usr/lib/llvm16/ -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DZIG_OPTIMIZE=ReleaseFast #-DUSE_LTO=ON # -DZIG_COMPILER=system
+        #-DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_CUSTOM_LIBUV=OFF -DUSE_STATIC_SQLITE=OFF
   ninja -C $srcdir/build -j$_j
 }
 
