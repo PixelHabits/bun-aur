@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.8
+pkgver=1.1.10
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
@@ -13,8 +13,8 @@ makedepends=(
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('d9f34e29168c098c14c5a5615ced208db1ae8b26ce1922eb05184db0899ccf4cca53848d23d1f1e65237c1a1566ce2ee12fae9694388da48c3bb51213609a011'
-        '6baced56b92e9577859c58f71d4f5ac036c08d972e51a4bf77b5223e385476ef21a689aac76fccd92debb18db55865042838361144d3ab8936dd94564a6329e6')
+b2sums=('360ce72269151f865d2cd176c11373039408cd2f2d5b36b06a4b08628958e0ef0db20994b6d0a421b92252c768288d91db5487e04435d7446885634502974aea'
+        '0de2153c957dacfbbca9549af9bdddf880584706d26f3ad5259cd26568bd11a6100671bb2423230f63a72b70f79e3e8542e086a02e3cc442208f131f1625f495')
 
 options=(!lto)
 
