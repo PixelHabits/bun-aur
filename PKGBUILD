@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.10
+pkgver=1.1.18
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
@@ -13,10 +13,8 @@ makedepends=(
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('360ce72269151f865d2cd176c11373039408cd2f2d5b36b06a4b08628958e0ef0db20994b6d0a421b92252c768288d91db5487e04435d7446885634502974aea'
-        '0de2153c957dacfbbca9549af9bdddf880584706d26f3ad5259cd26568bd11a6100671bb2423230f63a72b70f79e3e8542e086a02e3cc442208f131f1625f495')
-
-options=(!lto)
+b2sums=('063e21cdc8bea524c08525c378acf9d653719335f2c53cb6fdcda6957fd1e3f5c86123fa9dcbfef847490b955e0f26e4ff22122836c90ca9d8628ea91a0bd921'
+        '969a88601a19456dc26f6f30bc1cfdb6a9d256a590168f08a12cfb0bdc18d47a38848a44c37bbcc559f3ff9889e4a42734c3f670af0012bb8cf157f2349ba4a7')
 
 _j=$(($(nproc)/2)) #change for your system
 
@@ -43,7 +41,6 @@ build() {
   # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L84
 
   COMMON_FLAGS="-mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections"
-
   CC="/usr/bin/clang" CXX="/usr/bin/clang++" CFLAGS="${DEFAULT_CFLAGS} $CFLAGS" CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS" cmake \
       -S . \
       -B ./build \
@@ -79,13 +76,13 @@ build() {
   rm -rf ./output/include/unicode
   cp -r /usr/include/unicode ./output/include/unicode
 
-  ln -sf /lib/libicudata.so ./output/lib/libicudata.a
-  ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
-  ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
+  ln -s /lib/libicudata.so ./output/lib/libicudata.a
+  ln -s /lib/libicui18n.so ./output/lib/libicui18n.a
+  ln -s /lib/libicuuc.so ./output/lib/libicuuc.a
 
-  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF \
-        -DLLVM_PREFIX=/usr/lib/llvm16/ -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DZIG_OPTIMIZE=ReleaseFast #-DUSE_LTO=ON # -DZIG_COMPILER=system
-        #-DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_CUSTOM_LIBUV=OFF -DUSE_STATIC_SQLITE=OFF
+  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
+        -DLLVM_PREFIX=/usr/lib/llvm16/ -DCMAKE_CXX_COMPILER=/usr/lib/llvm16/bin/clang++ -DCPU_TARGET=native -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system # \
+        #-DUSE_CUSTOM_ZSTD=OFF -DUSE_CUSTOM_ZLIB=ON -DUSE_CUSTOM_LIBARCHIVE=ON -DUSE_CUSTOM_MIMALLOC=ON -DUSE_CUSTOM_LIBUV=ON -DUSE_STATIC_SQLITE=ON
   ninja -C $srcdir/build -j$_j
 }
 
