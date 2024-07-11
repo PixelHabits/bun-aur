@@ -1,14 +1,14 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
 pkgver=1.1.18
-pkgrel=1
+pkgrel=2
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
 license=('GPL')
-depends=(zlib libarchive mimalloc libuv sqlite)
+depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	clang16 cmake esbuild git go icu libiconv libtool lld16 llvm16 ninja pkg-config python ruby rust unzip zig
+	clang cmake esbuild git go icu libiconv libtool lld llvm ninja pkg-config python ruby rust unzip zig
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
@@ -16,12 +16,13 @@ source=(git+$url.git#tag=bun-v$pkgver
 b2sums=('063e21cdc8bea524c08525c378acf9d653719335f2c53cb6fdcda6957fd1e3f5c86123fa9dcbfef847490b955e0f26e4ff22122836c90ca9d8628ea91a0bd921'
         '969a88601a19456dc26f6f30bc1cfdb6a9d256a590168f08a12cfb0bdc18d47a38848a44c37bbcc559f3ff9889e4a42734c3f670af0012bb8cf157f2349ba4a7')
 
-_j=$(($(nproc)/2)) #change for your system
+_j=6 #change for your system
 
 prepare() {
   cd bun
 
-  bash ./scripts/update-submodules.sh --webkit
+  git submodule update --init --recursive --progress --depth=1 --checkout src/bun.js/WebKit src/deps/picohttpparser src/deps/boringssl src/deps/lol-html src/deps/ls-hpack
+
   bash ./scripts/set-webkit-submodule-to-cmake.sh
 }
 
@@ -30,9 +31,15 @@ build() {
 
   cd bun
 
+  mkdir -p ./build
+
   bun i
 
-  bash ./scripts/all-dependencies.sh
+  bash ./scripts/build-lolhtml.sh
+  bash ./scripts/build-lshpack.sh
+  bash ./scripts/build-boringssl.sh
+
+  ln -sf /usr/lib/libtcc.so ./build/bun-deps/libtcc.a
 
   make runtime_js fallback_decoder bun_error node-fallbacks
 
@@ -76,14 +83,16 @@ build() {
   rm -rf ./output/include/unicode
   cp -r /usr/include/unicode ./output/include/unicode
 
-  ln -s /lib/libicudata.so ./output/lib/libicudata.a
-  ln -s /lib/libicui18n.so ./output/lib/libicui18n.a
-  ln -s /lib/libicuuc.so ./output/lib/libicuuc.a
+  ln -sf /lib/libicudata.so ./output/lib/libicudata.a
+  ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
+  ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
 
-  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/$pkgname -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
-        -DLLVM_PREFIX=/usr/lib/llvm16/ -DCMAKE_CXX_COMPILER=/usr/lib/llvm16/bin/clang++ -DCPU_TARGET=native -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system # \
-        #-DUSE_CUSTOM_ZSTD=OFF -DUSE_CUSTOM_ZLIB=ON -DUSE_CUSTOM_LIBARCHIVE=ON -DUSE_CUSTOM_MIMALLOC=ON -DUSE_CUSTOM_LIBUV=ON -DUSE_STATIC_SQLITE=ON
-  ninja -C $srcdir/build -j$_j
+  cd $srcdir
+
+  CXXFLAGS="-Wno-unused-result -Wno-error=format-truncation ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
+        -DLLVM_PREFIX=/usr -DCPU_TARGET=native -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system -DZIG_LIB_DIR=/usr/lib/zig/ \
+        -DUSE_CUSTOM_ZSTD=OFF -DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_CARES=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_UNIFIED_SOURCES=ON
+  ninja -C ./build -j$_j
 }
 
 package() {
