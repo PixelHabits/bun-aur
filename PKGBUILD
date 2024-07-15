@@ -1,7 +1,7 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.18
-pkgrel=2
+pkgver=1.1.20
+pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
@@ -13,8 +13,8 @@ makedepends=(
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('063e21cdc8bea524c08525c378acf9d653719335f2c53cb6fdcda6957fd1e3f5c86123fa9dcbfef847490b955e0f26e4ff22122836c90ca9d8628ea91a0bd921'
-        '969a88601a19456dc26f6f30bc1cfdb6a9d256a590168f08a12cfb0bdc18d47a38848a44c37bbcc559f3ff9889e4a42734c3f670af0012bb8cf157f2349ba4a7')
+b2sums=('983a199a6c2d3882f4da9652b922c90055d8bea0d58e1fe6695ef8cef4d786142b9882fb6b483b987e685692d2162d102987340208fe4d484d46e8ab89e07fe1'
+        'ac42166a79191cf58869c72f98fdda6b7269ed25e79bd4262abb39da08277ccfe556815ebd61aefee1fa6d41871e56cb1921444ad13d26ceec854b167321aa12')
 
 _j=6 #change for your system
 
@@ -90,7 +90,7 @@ build() {
   cd $srcdir
 
   CXXFLAGS="-Wno-unused-result -Wno-error=format-truncation ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
-        -DLLVM_PREFIX=/usr -DCPU_TARGET=native -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system -DZIG_LIB_DIR=/usr/lib/zig/ \
+        -DLLVM_PREFIX=/usr -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system -DCPU_TARGET=native -DZIG_LIB_DIR=/usr/lib/zig/ \
         -DUSE_CUSTOM_ZSTD=OFF -DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_CARES=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_UNIFIED_SOURCES=ON
   ninja -C ./build -j$_j
 }
