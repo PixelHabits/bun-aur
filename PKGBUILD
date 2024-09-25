@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.20
+pkgver=1.1.29
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
@@ -8,47 +8,56 @@ url="https://github.com/oven-sh/bun"
 license=('GPL')
 depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	clang cmake esbuild git go icu libiconv libtool lld llvm ninja pkg-config python ruby rust unzip zig
+	clang cmake esbuild git go icu libdeflate libiconv libtool lld llvm ninja pkg-config python ruby rust unzip zig
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
-        bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
-b2sums=('983a199a6c2d3882f4da9652b922c90055d8bea0d58e1fe6695ef8cef4d786142b9882fb6b483b987e685692d2162d102987340208fe4d484d46e8ab89e07fe1'
-        'ac42166a79191cf58869c72f98fdda6b7269ed25e79bd4262abb39da08277ccfe556815ebd61aefee1fa6d41871e56cb1921444ad13d26ceec854b167321aa12')
+        bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
+        git+https://github.com/oven-sh/WebKit.git#commit=4a2db3254a9535949a5d5380eb58cf0f77c8e15a
+        describeFrame.patch)
+b2sums=('2ea0c86bc5c120e2f452ca5614fe09c11f2b99c3747efe76e21764f25ed28fd6fee4cafc35ac8c44c5ab4aafc2be7494944e0be162bb322a3233cd6a9d712ccc'
+        '05eaaa1369457ee47393a7e91d3ee74bccad11c39d83818034079e7e9b31b343a09996b36deac850eced8333e42b8c7cc6293d98a1ce8625aa54dffd60ee06d2'
+        '82c6b8570b8fc7fd2dd030bf5fee70585b9cc82a1e6b096656e2fbfc6b2e8cbc81468a777b5f1daae874650de83f183f9e8f35170a2a14aa387d8dc6a0ebed74'
+        '1f0c037df9ed2df72df9cb714843bc7f64cc6fd06482132d9b09846ab69db5cab6f5910c6e27d2b335af4b0fd7b2694f7fb27de1c4c34848b12cdcd9fd347f1f')
+options=(!ccache lto)
 
 _j=6 #change for your system
 
 prepare() {
-  cd bun
-
-  git submodule update --init --recursive --progress --depth=1 --checkout src/bun.js/WebKit src/deps/picohttpparser src/deps/boringssl src/deps/lol-html src/deps/ls-hpack
-
-  bash ./scripts/set-webkit-submodule-to-cmake.sh
-}
-
-build() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
 
   cd bun
+  git apply $srcdir/describeFrame.patch
+  bun i
+  rm -rf ./vendor/zig
+  mkdir -p ./vendor/zig
+  ln -sf /usr/bin ./vendor/zig/
+  ln -sf /usr/lib/zig ./vendor/zig/lib
+  cd ..
+}
 
+
+build() {
   mkdir -p ./build
 
-  bun i
+  build_webkit
 
-  bash ./scripts/build-lolhtml.sh
-  bash ./scripts/build-lshpack.sh
-  bash ./scripts/build-boringssl.sh
+  cd $srcdir
 
-  ln -sf /usr/lib/libtcc.so ./build/bun-deps/libtcc.a
+  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
+        -DENABLE_CCACHE=OFF -DLLVM_PREFIX=/usr -DWEBKIT_PATH=$srcdir/WebKit/output -DWEBKIT_LOCAL=ON -DENABLE_LTO=ON -DCPU_TARGET=native -DLLVM_VERSION=18.1.8
+  sed -i 's/lld-18/lld/g' ./build/build.ninja
+  ninja -C ./build -j$_j
+}
 
-  make runtime_js fallback_decoder bun_error node-fallbacks
+build_webkit(){
 
-  cd src/bun.js/WebKit/
+  cd $srcdir/WebKit/
 
-  # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L84
+  # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L109
 
-  COMMON_FLAGS="-mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections"
-  CC="/usr/bin/clang" CXX="/usr/bin/clang++" CFLAGS="${DEFAULT_CFLAGS} $CFLAGS" CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS" cmake \
+  COMMON_FLAGS="-mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables -DU_STATIC_IMPLEMENTATION=1" \
+  CC="/usr/bin/clang" CXX="/usr/bin/clang++" CFLAGS="${DEFAULT_CFLAGS} $CFLAGS" CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS -fno-c++-static-destructors" cmake \
       -S . \
       -B ./build \
       -Wno-dev \
@@ -86,13 +95,6 @@ build() {
   ln -sf /lib/libicudata.so ./output/lib/libicudata.a
   ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
   ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
-
-  cd $srcdir
-
-  CXXFLAGS="-Wno-unused-result -Wno-error=format-truncation ${CXXFLAGS}" cmake -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -GNinja -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
-        -DLLVM_PREFIX=/usr -DWEBKIT_DIR=$srcdir/bun/src/bun.js/WebKit/output -DUSE_DEBUG_JSC=OFF -DUSE_LTO=ON -DZIG_COMPILER=system -DCPU_TARGET=native -DZIG_LIB_DIR=/usr/lib/zig/ \
-        -DUSE_CUSTOM_ZSTD=OFF -DUSE_CUSTOM_ZLIB=OFF -DUSE_CUSTOM_LIBARCHIVE=OFF -DUSE_CUSTOM_CARES=OFF -DUSE_CUSTOM_MIMALLOC=OFF -DUSE_UNIFIED_SOURCES=ON
-  ninja -C ./build -j$_j
 }
 
 package() {
