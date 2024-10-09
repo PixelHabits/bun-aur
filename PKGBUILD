@@ -1,23 +1,24 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.29
+pkgver=1.1.30
+_webkitver=0a0a3838e5fab36b579df26620237bb62ed6d950 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
 license=('GPL')
-depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
+#depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	clang cmake esbuild git go icu libdeflate libiconv libtool lld llvm ninja pkg-config python ruby rust unzip zig
+	clang cmake git go icu libdeflate libiconv libtool lld llvm ninja pkg-config python ruby rust unzip zig
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
-        git+https://github.com/oven-sh/WebKit.git#commit=4a2db3254a9535949a5d5380eb58cf0f77c8e15a
+        git+https://github.com/oven-sh/WebKit.git#commit=$_webkitver
         describeFrame.patch)
-b2sums=('2ea0c86bc5c120e2f452ca5614fe09c11f2b99c3747efe76e21764f25ed28fd6fee4cafc35ac8c44c5ab4aafc2be7494944e0be162bb322a3233cd6a9d712ccc'
-        '05eaaa1369457ee47393a7e91d3ee74bccad11c39d83818034079e7e9b31b343a09996b36deac850eced8333e42b8c7cc6293d98a1ce8625aa54dffd60ee06d2'
-        '82c6b8570b8fc7fd2dd030bf5fee70585b9cc82a1e6b096656e2fbfc6b2e8cbc81468a777b5f1daae874650de83f183f9e8f35170a2a14aa387d8dc6a0ebed74'
+b2sums=('2ba0a0ef80797877afdab71af894e08add32529059ab1c71a9b00b1e0ac0a6fc286d1c387bbdf5cc7c4e48ff5247c17bd10d16a4931f25c3a1d835904de76439'
+        '2cb2d78484927ed9fa421defd3bea774e726052233472ec52bb4bd88a6c755b287da88c40d8bd66143614db2bc222dfd3ceec7f1d63c2535f7483f1bb1cb5a73'
+        '47b9df0fc4b2acfa3b2b3c7b8ada709756579d62504f99350f9aa6ddee4f1c520d5d57561c900c3da6c179a7f6afdd96221b5d6f5bce683e6bc9eae80022afe5'
         '1f0c037df9ed2df72df9cb714843bc7f64cc6fd06482132d9b09846ab69db5cab6f5910c6e27d2b335af4b0fd7b2694f7fb27de1c4c34848b12cdcd9fd347f1f')
 options=(!ccache lto)
 
