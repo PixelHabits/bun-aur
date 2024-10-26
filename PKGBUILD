@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.1.32
+pkgver=1.1.33
 _webkitver=543cca2140eafdba845f6689024abaac0d9924f5 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
@@ -16,8 +16,8 @@ source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
         git+https://github.com/oven-sh/WebKit.git#commit=$_webkitver
         describeFrame.patch)
-b2sums=('7510e7ef19a8b5db7ce16b015bb286bc284afa7f3ac468a3a3f5f9b75172ed576bccf4e9c51734bf5db23131c6e3529d625be90808069c353805016dd3a6813b'
-        '1ac337ee5afbab6a9a5e68eedb6ef7a58f2257359471e13ae7a1deb48b9778f221f5d415df44f85cf9bf48dbea36a2829fe56e0e40ef72f9f0c42598fbd1f5d1'
+b2sums=('be93f14f5da981b24a6469811bb162377996a0449ffc82ed870190210991b0257251cbf2142427fccdabdd5a758b89ec8f7535bd608235b9f700746a1bc69084'
+        '5ebcbc37752a21f31a2329acb5cbeb6e252254c24c6a2a9dfcef0be143b689dffdfa054d9bb66f30979a8fee5893fcf55870e7e5dfdf16cf9790f63cf9ccdfed'
         'f0a02da6571e46a9bff4b0566b13ec83ec16acf2a9d7088185a1525889ff044006facdc2ff92e2ee2b6627918346237100cc06a5ec27799c2eba8ec721b41647'
         '1f0c037df9ed2df72df9cb714843bc7f64cc6fd06482132d9b09846ab69db5cab6f5910c6e27d2b335af4b0fd7b2694f7fb27de1c4c34848b12cdcd9fd347f1f')
 options=(!ccache lto)
@@ -46,7 +46,7 @@ build() {
   cd $srcdir
 
   CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
-        -DENABLE_CCACHE=OFF -DLLVM_PREFIX=/usr -DWEBKIT_PATH=$srcdir/WebKit/output -DWEBKIT_LOCAL=ON -DENABLE_LTO=ON -DCPU_TARGET=native -DLLVM_VERSION=18.1.8 -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold"
+        -DENABLE_CCACHE=OFF -DLLVM_PREFIX=/usr -DWEBKIT_PATH=$srcdir/WebKit/output -DWEBKIT_LOCAL=ON -DENABLE_LTO=ON -DCPU_TARGET=native -DLLVM_VERSION=18.1.8 -DLLD_NAME="mold"
   ninja -C ./build -j$_j
 }
 
