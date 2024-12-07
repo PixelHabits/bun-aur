@@ -9,28 +9,23 @@ url="https://github.com/oven-sh/bun"
 license=('GPL')
 #depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	ccache clang cmake git go icu libdeflate libiconv libtool lld llvm mold ninja pkg-config python ruby rust unzip zig
+	ccache clang cmake git go icu libdeflate libiconv libtool lld llvm mold ninja pkg-config python ruby rust unzip
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
-        bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
-        git+https://github.com/oven-sh/WebKit.git#commit=$_webkitver)
-b2sums=('24904d79318a26381eaf2a7391731c9ab595fee633dd67092270c1629cb15e48ad56dae741ea25204dda33886a44023278ebc6310ff56d72e4726fb735845e8d'
-        '6740547de77c7d6c0f6e8729a850336941fd0233f5718368129ec06066c11519051fa04292fbb5938b4050f5426f4c7e331469f11ab7f005953aade1a0f9c00b'
-        '2144ed8faff1a913e5ceeff838e6aacf2ce0e28ad65497ebd0c16bcaf7843cca878f79a4b1ec583b9dc7410bfd8f69f9a7aa1f6b1bd1c61fafa7e83be47847df')
+        bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip) # add "baseline" here to download the avx2-less build of bun!
+        # git+https://github.com/oven-sh/WebKit.git#commit=$_webkitver)
+b2sums=('ca26422dac5bc9074bc62f3be079c33ed2481b8760f5f500b8f89d3e79aafa0df02bc83a2fd76d0b37cdbf17054cdcc048899e6a10d31505d3827550355e4c1f'
+        '73f55583a977835b16313a2d8b71bb324146af959f06f45596b6bdd50a43865ca75c80d649d8c662758ee794fc1515d425ee0dfb72efda4df18577fbbb1191bd')
 options=(ccache lto)
 
-_j=6 #change for your system
+_j=16 #change for your system
 
 prepare() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
 
   cd bun
   bun i
-  rm -rf ./vendor/zig
-  mkdir -p ./vendor/zig
-  ln -sf /usr/bin ./vendor/zig/
-  ln -sf /usr/lib/zig ./vendor/zig/lib
   cd ..
 }
 
@@ -38,12 +33,19 @@ prepare() {
 build() {
   mkdir -p ./build
 
-  build_webkit
+#   ln -sf $srcdir/Webkit ./bun/vendor/WebKit
+# 
+#   build_webkit
 
-  cd $srcdir
+#   cd $srcdir/bun
+# 
+#   WEBKIT_DIR=$srcdir/WebKit make jsc-copy-headers
+# 
+#   cd ..
 
   CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" cmake -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF -DUSE_SYSTEM_ICU=OFF \
-        -DENABLE_CCACHE=OFF -DLLVM_PREFIX=/usr -DWEBKIT_PATH=$srcdir/WebKit/output -DWEBKIT_LOCAL=ON -DENABLE_LTO=ON -DCPU_TARGET=native -DLLVM_VERSION=18.1.8 -DLLD_NAME="mold"
+        -DENABLE_CCACHE=ON -DLLVM_PREFIX=/usr -DENABLE_LTO=ON -DENABLE_CANARY=OFF -DCPU_TARGET=native -DLLVM_VERSION=18.1.8 -DLLD_NAME="mold" #-DWEBKIT_LOCAL=ON -DWEBKIT_PATH=$srcdir/WebKit/WebKitBuild/Release
+
   ninja -C ./build -j$_j
 }
 
