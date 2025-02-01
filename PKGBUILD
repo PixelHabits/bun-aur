@@ -1,7 +1,7 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.2.1
-_webkitver=9e3b60e4a6438d20ee6f8aa5bec6b71d2b7d213f #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
+pkgver=1.2.2
+_webkitver=e32c6356625cfacebff0c61d182f759abf6f508a #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
@@ -15,8 +15,8 @@ conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
         brotliFlag.patch)
-b2sums=('b196a9e7ed186a4476ff6485083600e0a00b09799f321106c38d98e8320b0ccf0480c7ec2176f89f6566ab05cf06a345fdad08bc1e48434d2600f07c916bfb9d'
-        '2e7c45784ac06313713cc009d16b071f86f58c52c859202c2ba974fda7d4d0e4efa92df74ae7d412ea49750ff81d357d99245672a215726b3ccae1a6395f9327'
+b2sums=('cb81f44b8731d6469dfed649e67fdf5620fd7e591814ce7a0fc6611d0b65d7fe5d7a1c424b47b7a50256ddf172ccb8753cd25afc2f7c6138d67c75e883ed2234'
+        '6a4396659321399f88dc3a79b6fb35d23b9eee53f60c106938e98e3e3fee92b56afb5257ff5f30cc9a37a5fbfb90333a3a5d7cc7583bc7b99ecc0f751d1ac2f0'
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
@@ -27,6 +27,9 @@ prepare() {
 
   # rm -rf WebKit
   if ! [[ -d WebKit ]]; then
+      git clone --depth=1 https://github.com/oven-sh/WebKit.git -b autobuild-$_webkitver
+  else
+      rm -rf WebKit
       git clone --depth=1 https://github.com/oven-sh/WebKit.git -b autobuild-$_webkitver
   fi
 
