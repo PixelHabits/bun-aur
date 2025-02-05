@@ -2,14 +2,14 @@
 pkgname=bun
 pkgver=1.2.2
 _webkitver=e32c6356625cfacebff0c61d182f759abf6f508a #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
-pkgrel=1
+pkgrel=2
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
 license=('GPL')
 #depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	ccache clang18 cmake git go icu libdeflate libiconv libtool lld18 llvm18 mold ninja pkg-config python ruby rust unzip
+	ccache clang18 cmake git go icu libdeflate libiconv libtool lld18 llvm18 ninja pkg-config python ruby rust unzip
 )
 conflicts=(bun-bin)
 source=(git+$url.git#tag=bun-v$pkgver
@@ -87,7 +87,7 @@ build_webkit(){
       -DCMAKE_BUILD_TYPE=Release \
       -DUSE_THIN_ARCHIVES=OFF \
       -DUSE_BUN_JSC_ADDITIONS=ON \
-      -DUSE_BUN_EVENT_LOOP=OFF \
+      -DUSE_BUN_EVENT_LOOP=ON \
       -DENABLE_FTL_JIT=ON \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
       -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON \
@@ -118,9 +118,9 @@ build_webkit(){
   cp -r ../../Source/JavaScriptCore/Scripts ./output/Source/JavaScriptCore
   cp ../../Source/JavaScriptCore/create_hash_table ./output/Source/JavaScriptCore
 
-  ln -sf /lib/libicudata.so ./lib/libicudata.a
-  ln -sf /lib/libicui18n.so ./lib/libicui18n.a
-  ln -sf /lib/libicuuc.so ./lib/libicuuc.a
+  ln -sf /lib/libicudata.so ./output/lib/libicudata.a
+  ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
+  ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
 
   popd
 }
