@@ -11,7 +11,7 @@ license=('GPL')
 makedepends=(
 	ccache clang18 cmake git go icu libdeflate libiconv libtool lld18 llvm18 mold ninja pkg-config python ruby rust unzip
 )
-conflicts=(bun-bin)
+conflicts=(bun-bin bun-git)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
         brotliFlag.patch)
