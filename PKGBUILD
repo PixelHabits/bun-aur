@@ -20,7 +20,7 @@ b2sums=('cb81f44b8731d6469dfed649e67fdf5620fd7e591814ce7a0fc6611d0b65d7fe5d7a1c4
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
-_j=16 #change for your system
+_j=$(nproc) # Chooses parallel job count automatically
 
 prepare() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
