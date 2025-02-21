@@ -2,7 +2,7 @@
 pkgname=bun
 pkgver=1.2.2
 _webkitver=e32c6356625cfacebff0c61d182f759abf6f508a #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
-pkgrel=2
+pkgrel=3
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
