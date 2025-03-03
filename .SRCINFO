@@ -1,7 +1,7 @@
 pkgbase = bun
 	pkgdesc = Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU.
-	pkgver = 1.2.2
-	pkgrel = 3
+	pkgver = 1.2.4
+	pkgrel = 1
 	url = https://github.com/oven-sh/bun
 	arch = x86_64
 	license = GPL
@@ -23,13 +23,14 @@ pkgbase = bun
 	makedepends = rust
 	makedepends = unzip
 	conflicts = bun-bin
+	conflicts = bun-git
 	options = ccache
 	options = lto
-	source = git+https://github.com/oven-sh/bun.git#tag=bun-v1.2.2
-	source = bun-linux-x64-1.2.2.zip::https://github.com/oven-sh/bun/releases/download/bun-v1.2.2/bun-linux-x64.zip
+	source = git+https://github.com/oven-sh/bun.git#tag=bun-v1.2.4
+	source = bun-linux-x64-1.2.4.zip::https://github.com/oven-sh/bun/releases/download/bun-v1.2.4/bun-linux-x64.zip
 	source = brotliFlag.patch
-	b2sums = cb81f44b8731d6469dfed649e67fdf5620fd7e591814ce7a0fc6611d0b65d7fe5d7a1c424b47b7a50256ddf172ccb8753cd25afc2f7c6138d67c75e883ed2234
-	b2sums = 6a4396659321399f88dc3a79b6fb35d23b9eee53f60c106938e98e3e3fee92b56afb5257ff5f30cc9a37a5fbfb90333a3a5d7cc7583bc7b99ecc0f751d1ac2f0
+	b2sums = 059f38879c3654b8fcdd7a3e0129a0bc31550243ecf9a956b26ba0a5821be5bf28a002b2f2d626c840172b26d6368538c2787c91655dd4c03447495316f55244
+	b2sums = 51e6365201cbc0cfcbd3f943645e94fd4d25e93fff7197f993a24a1eb10af05c4f0d6f828e250e4539a0920a686d060cd027a6d0c4a4f83d9dc303a70ed09889
 	b2sums = ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d
 
 pkgname = bun

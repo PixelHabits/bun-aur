@@ -1,8 +1,8 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.2.2
-_webkitver=e32c6356625cfacebff0c61d182f759abf6f508a #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
-pkgrel=3
+pkgver=1.2.4
+_webkitver=c333de54223425d7148603d63dd3f6152d0bc348 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
+pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
@@ -15,22 +15,22 @@ conflicts=(bun-bin bun-git)
 source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
         brotliFlag.patch)
-b2sums=('cb81f44b8731d6469dfed649e67fdf5620fd7e591814ce7a0fc6611d0b65d7fe5d7a1c424b47b7a50256ddf172ccb8753cd25afc2f7c6138d67c75e883ed2234'
-        '6a4396659321399f88dc3a79b6fb35d23b9eee53f60c106938e98e3e3fee92b56afb5257ff5f30cc9a37a5fbfb90333a3a5d7cc7583bc7b99ecc0f751d1ac2f0'
+b2sums=('059f38879c3654b8fcdd7a3e0129a0bc31550243ecf9a956b26ba0a5821be5bf28a002b2f2d626c840172b26d6368538c2787c91655dd4c03447495316f55244'
+        '51e6365201cbc0cfcbd3f943645e94fd4d25e93fff7197f993a24a1eb10af05c4f0d6f828e250e4539a0920a686d060cd027a6d0c4a4f83d9dc303a70ed09889'
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
-_j=$(nproc) # Chooses parallel job count automatically
+_j=$(($(nproc) / 2)) # Chooses parallel job count automatically
 
 prepare() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
 
   # rm -rf WebKit
   if ! [[ -d WebKit ]]; then
-      git clone --depth=1 https://github.com/oven-sh/WebKit.git -b autobuild-$_webkitver
+      git clone --filter=tree:0 https://github.com/oven-sh/WebKit.git -b autobuild-$_webkitver
   else
-      rm -rf WebKit
-      git clone --depth=1 https://github.com/oven-sh/WebKit.git -b autobuild-$_webkitver
+      git -C WebKit fetch --filter=tree:0
+      git -C WebKit checkout autobuild-$_webkitver
   fi
 
   cd bun
@@ -40,10 +40,12 @@ prepare() {
 
   patch -Np1 -i ../brotliFlag.patch
 
-  bun i
+  # bun i
 }
 
 build() {
+  export PATH="${srcdir}/bun-linux-x64:$PATH"
+
   export PATH="$/usr/lib/llvm18/bin/:$PATH"
   mkdir -p ./build
 
@@ -74,10 +76,10 @@ build_webkit(){
   export LTO_FLAG="-flto=full -fwhole-program-vtables -fforce-emit-vtables "
 
   export CFLAGS="${DEFAULT_CFLAGS} $CFLAGS $LTO_FLAG "
-  export CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS $LTO_FLAG -fno-c++-static-destructors "
+  export CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS $LTO_FLAG -fno-c++-static-destructors -Wno-c++23-lambda-attributes "
   export LDFLAGS="-fuse-ld=lld $LDFLAGS "
 
-  CC="/usr/bin/clang" CXX="/usr/bin/clang++" cmake \
+  CC="/usr/lib/llvm18/bin/clang" CXX="/usr/lib/llvm18/bin/clang++" cmake \
       -S . \
       -B ./WebKitBuild/Release \
       -Wno-dev \
@@ -93,10 +95,9 @@ build_webkit(){
       -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON \
       -DENABLE_REMOTE_INSPECTOR=ON \
       -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
-      -DCMAKE_AR="/usr/bin/llvm-ar" \
-      -DCMAKE_RANLIB="/usr/bin/llvm-ranlib" \
+      -DCMAKE_AR="/usr/lib/llvm18/bin/llvm-ar" \
+      -DCMAKE_RANLIB="/usr/lib/llvm18/bin/llvm-ranlib" \
       -GNinja
-
 
   cd ./WebKitBuild/Release
   ninja jsc -j$_j
