@@ -2,7 +2,7 @@
 pkgname=bun
 pkgver=1.2.5
 _webkitver=abe5e808a649db1182333f65bef55e65bb374616 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
-pkgrel=1
+pkgrel=2
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
@@ -12,15 +12,15 @@ makedepends=(
 	ccache clang cmake git go icu75 libdeflate libiconv libtool lld llvm ninja mold pkg-config python ruby rust unzip
 )
 conflicts=(bun-bin bun-git)
-source=(git+$url.git#branch=ben/upgrade-zig
+source=(git+$url.git#tag=bun-v$pkgver
         bun-linux-x64-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip # add "baseline" here to download the avx2-less build of bun!
         brotliFlag.patch)
-b2sums=('SKIP'
+b2sums=('ff1d36251162a2cb70dd2874f98a938d2678d2cbb4544fd784e274e7f400f72743469e3b1bfa8f3a60ce902bc833ae716621fe5d89e26691a3bbf021b815833e'
         'b3c0b1eb15e0fb4bf1c7249a70d3026c9fdde5ab6130d8a2b2137425f305ab0bbcc3a4745f0380efc2e74dd3dc7110c7188ed976946ea39e4e87a2d7d6dd480b'
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
-_j=$(( $(nproc) / 4 )) # Chooses parallel job count automatically
+_j=$(( $(nproc) / 2 + 1 )) # Chooses parallel job count automatically
 
 prepare() {
   export PATH="${srcdir}/bun-linux-x64:$PATH"
@@ -55,7 +55,7 @@ build() {
 
   cd bun
   CXXFLAGS="-Wno-unused-result -Wno-c++23-lambda-attributes ${CXXFLAGS}" bun ./scripts/build.mjs -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF -DUSE_WEBKIT_ICU=ON \
-        -DENABLE_CCACHE=ON -DLLVM_VERSION=19.1.7 -DENABLE_LTO=ON -DUSE_STATIC_SQLITE=OFF #-DWEBKIT_LOCAL=ON -DWEBKIT_PATH=$srcdir/WebKit/WebKitBuild/Release/output \
+        -DENABLE_CCACHE=ON -DLLVM_VERSION=19.1.7 -DENABLE_LTO=ON -DUSE_STATIC_SQLITE=OFF -DWEBKIT_LOCAL=ON -DWEBKIT_PATH=$srcdir/WebKit/WebKitBuild/Release/output -j$_j #\
         # -DCMAKE_C_COMPILER=/usr/lib/llvm18/bin/clang -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++
 }
 
@@ -120,9 +120,9 @@ build_webkit(){
   cp -r ../../Source/JavaScriptCore/Scripts ./output/Source/JavaScriptCore
   cp ../../Source/JavaScriptCore/create_hash_table ./output/Source/JavaScriptCore
 
-  ln -sf /lib/libicudata.so.75 ./output/lib/libicudata.a
-  ln -sf /lib/libicui18n.so.75 ./output/lib/libicui18n.a
-  ln -sf /lib/libicuuc.so.75 ./output/lib/libicuuc.a
+  ln -sf /lib/libicudata.so ./output/lib/libicudata.a
+  ln -sf /lib/libicui18n.so ./output/lib/libicui18n.a
+  ln -sf /lib/libicuuc.so ./output/lib/libicuuc.a
 
   popd
 }
