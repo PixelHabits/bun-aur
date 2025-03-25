@@ -1,8 +1,8 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.2.5
-_webkitver=abe5e808a649db1182333f65bef55e65bb374616 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
-pkgrel=3
+pkgver=1.2.6
+_webkitver=ef31d98a1370e01b7483cabcbe3593d055bea982 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
+pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
 arch=(x86_64)
 url="https://github.com/oven-sh/bun"
@@ -14,7 +14,7 @@ makedepends=(
 conflicts=(bun-bin bun-git)
 source=(bun::git+$url.git#tag=bun-v$pkgver
         brotliFlag.patch)
-b2sums=('ff1d36251162a2cb70dd2874f98a938d2678d2cbb4544fd784e274e7f400f72743469e3b1bfa8f3a60ce902bc833ae716621fe5d89e26691a3bbf021b815833e'
+b2sums=('add1f55cde50865918397e824ac0ea12d9b09b46392fc17f990bb1706bc1e60e573a9c1942d19659381b31601be6344cf5f1406675b78af7f52a0893208b0e52'
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
