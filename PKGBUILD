@@ -1,6 +1,6 @@
 # Maintainer: Daniele Basso <d dot bass 05 at proton dot me>
 pkgname=bun
-pkgver=1.2.6
+pkgver=1.2.8
 _webkitver=ef31d98a1370e01b7483cabcbe3593d055bea982 #https://github.com/oven-sh/bun/blob/main/cmake/tools/SetupWebKit.cmake#L5
 pkgrel=1
 pkgdesc="Bun is a fast JavaScript all-in-one toolkit. This PKGBUILD builds from source, resulting into a smaller and faster binary depending on your CPU."
@@ -9,12 +9,12 @@ url="https://github.com/oven-sh/bun"
 license=('GPL')
 #depends=(c-ares libarchive libuv mimalloc tcc zlib zstd)
 makedepends=(
-	ccache clang cmake git go icu75 libdeflate libiconv libtool lld llvm ninja nodejs mold pkg-config python ruby rust unzip yarn
+	ccache clang cmake3 git go icu75 libdeflate libiconv libtool lld llvm ninja nodejs mold pkg-config python ruby rust unzip yarn
 )
 conflicts=(bun-bin bun-git)
 source=(bun::git+$url.git#tag=bun-v$pkgver
         brotliFlag.patch)
-b2sums=('add1f55cde50865918397e824ac0ea12d9b09b46392fc17f990bb1706bc1e60e573a9c1942d19659381b31601be6344cf5f1406675b78af7f52a0893208b0e52'
+b2sums=('7d32bb343dfe73976a552f6a13125da2dcf40ca4380d5d6cd90171c271fe1691431380de9841c7ae0e7c34d6291a7bf989e5e35cd437116dd692fbc13f509f2b'
         'ba86bf7d8ff3c6b0aa1b26a2eaf7d0ca480ff42fde59b75f3290de3f197a07ec8fd926c96287436e29d5dedb9632ffe9e1f8d44ebfa7f9df804874bc889afc2d')
 options=(ccache lto)
 
@@ -45,10 +45,10 @@ build() {
 
   # CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" bun run build
 
+  rm -vf build/CMakeCache.txt
   cd bun
-  CXXFLAGS="-Wno-unused-result -Wno-c++23-lambda-attributes ${CXXFLAGS}" yarn dlx bun ./scripts/build.mjs -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF -DUSE_WEBKIT_ICU=ON \
-        -DENABLE_CCACHE=ON -DLLVM_VERSION=19.1.7 -DENABLE_LTO=ON -DUSE_STATIC_SQLITE=OFF -DWEBKIT_LOCAL=ON -DWEBKIT_PATH=$srcdir/WebKit/WebKitBuild/Release/output  -j$_j #\
-        # -DCMAKE_C_COMPILER=/usr/lib/llvm18/bin/clang -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++
+  CXXFLAGS="-Wno-unused-result ${CXXFLAGS}" yarn dlx bun ./scripts/build.mjs -GNinja -B $srcdir/build -S $srcdir/bun -Wno-dev -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBATOMIC=OFF \
+        -DENABLE_CCACHE=ON -DENABLE_LTO=ON -DUSE_STATIC_SQLITE=OFF -DWEBKIT_LOCAL=ON -DWEBKIT_PATH=$srcdir/WebKit/WebKitBuild/Release/output  -j$_j -DCMAKE_POLICY_VERSION_MINIMUM=3.5 #\  -DLLVM_VERSION=19.1.7
 }
 
 build_webkit(){
@@ -65,14 +65,14 @@ build_webkit(){
 
   # Adapted from https://github.com/oven-sh/WebKit/blob/main/Dockerfile#L109
 
-  export DEFAULT_CFLAGS="-mno-omit-leaf-frame-pointer -g -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables -DU_STATIC_IMPLEMENTATION=1 "
+  export DEFAULT_CFLAGS="-mno-omit-leaf-frame-pointer -g -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables -DU_STATIC_IMPLEMENTATION=1 -DNDEBUG=1 "
   export LTO_FLAG="-flto=full -fwhole-program-vtables -fforce-emit-vtables "
 
   export CFLAGS="${DEFAULT_CFLAGS} $CFLAGS $LTO_FLAG "
-  export CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS $LTO_FLAG -fno-c++-static-destructors -Wno-c++23-lambda-attributes "
+  export CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS $LTO_FLAG -fno-c++-static-destructors "
   export LDFLAGS="-fuse-ld=lld $LDFLAGS "
 
-  CC="/usr/bin/clang" CXX="/usr/bin/clang++" cmake \
+  CC="clang" CXX="clang++" cmake \
       -S . \
       -B ./WebKitBuild/Release \
       -Wno-dev \
